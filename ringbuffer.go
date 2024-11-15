@@ -10,8 +10,8 @@ import (
 // BufferType provides constraints on the types that may be used for a New RingBuffer
 type BufferType interface {
 	int | int16 | int32 | int64 |
-	byte | uint | uint16 | uint32 | uint64 |
-	float32 | float64 | bool | string
+		byte | uint | uint16 | uint32 | uint64 |
+		float32 | float64 | bool | string
 }
 
 // RingBuffer is effectively a fixed-size container as a data structure. Fields defined
@@ -33,7 +33,7 @@ type RingBuffer[T BufferType] struct {
 var (
 	errBufferSizeIsZero = errors.New("failed to create a new ring buffer! " +
 		"Capacity / size cannot be zero")
-	errBufferSizeTooSmall = errors.New("failed to write to buffer! Ring buffer " +
+	errBufferSizeTooSmall = errors.New("failed to write to buffer! Ring buffer total " +
 		"capacity is too small for all values to be written")
 	errDataLengthIsZero = errors.New("failed to write to buffer! The amount of " +
 		"data to write is zero")
@@ -68,13 +68,12 @@ func (rb *RingBuffer[T]) String() string {
 	lastElement := len(rb.buffer) - 1
 
 	for i := range rb.buffer {
-		if i == lastElement {
-			bufferStr += fmt.Sprintf("%v", rb.buffer[i])
-		} else {
+		if i != lastElement {
 			bufferStr += fmt.Sprintf("%v", rb.buffer[i]) + ","
+		} else {
+			bufferStr += fmt.Sprintf("%v", rb.buffer[i]) + "]"
 		}
 	}
-	bufferStr += "]"
 	return bufferStr
 }
 
