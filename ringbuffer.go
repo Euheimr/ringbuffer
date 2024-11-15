@@ -7,34 +7,40 @@ import (
 	"sync"
 )
 
-// BufferType provides constraints on the types that may be used for a NewRingBuffer
+// BufferType provides constraints on the types that may be used for a New RingBuffer
 type BufferType interface {
 	int | int16 | int32 | int64 |
 	byte | uint | uint16 | uint32 | uint64 |
 	float32 | float64 | bool | string
 }
 
+// RingBuffer is effectively a fixed-size container as a data structure. Fields defined
+// in this struct are named in the context as a fixed-size container.
 type RingBuffer[T BufferType] struct {
+	// All data, including undefined elements, of which take a default value to their
+	// respective type. Bool defaults to False, int defaults to 0, string defaults to
+	// "", ... etc
 	buffer     []T
-	capacity   int
-	writeIndex int
+	mut        sync.Mutex // Handles thread safety and concurrency
+	capacity   int        // Total size of the buffer
 	values     int        // Number of elements stored within the buffer
-	isFull     bool
-	isEmpty    bool
-	mut        sync.Mutex
+	writeIndex int        // The next index to write into the buffer when Write() is called
+	isFull     bool       // Flag to tell when the buffer has been overwritten at some point
+	isEmpty    bool       // Flag for telling when the buffer has been Reset() or the buffer was newly created but has no stored values
 }
 
+// Error handling statements
 var (
-	errBufferSizeTooSmall = errors.New("failed to write to buffer! Ring buffer " +
-		"capacity is too small for all values to be written")
 	errBufferSizeIsZero = errors.New("failed to create a new ring buffer! " +
 		"Capacity / size cannot be zero")
+	errBufferSizeTooSmall = errors.New("failed to write to buffer! Ring buffer " +
+		"capacity is too small for all values to be written")
 	errDataLengthIsZero = errors.New("failed to write to buffer! The amount of " +
 		"data to write is zero")
 )
 
-// New creates a new ring buffer with a fixed zero-indexed capacity and specified type
-// constrained by the BufferType interface
+// New is effectively a constructor that creates a new ring buffer with a fixed,
+// zero-indexed capacity and specified type constrained by the BufferType interface
 func New[T BufferType](capacity int) (*RingBuffer[T], error) {
 	if capacity <= 0 {
 		return nil, errBufferSizeIsZero
