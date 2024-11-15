@@ -1,6 +1,7 @@
 package ringbuffer
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -8,124 +9,164 @@ import (
 
 // BufferType provides constraints on the types that may be used for a NewRingBuffer
 type BufferType interface {
-	string | int | int32 | int64 | float32 | float64 | bool
+	int | int16 | int32 | int64 |
+	byte | uint | uint16 | uint32 | uint64 |
+	float32 | float64 | bool | string
 }
 
 type RingBuffer[T BufferType] struct {
-	buffer []T
-	mut    sync.Mutex
-	size   int
-	write  int
-	count  int
+	buffer     []T
+	capacity   int
+	writeIndex int
+	count      int
+	isFull     bool
+	isEmpty    bool
+	mut        sync.Mutex
 }
 
-// NewRingBuffer creates a new ring buffer with a fixed size and specified type
+var (
+	errBufferSizeTooSmall = errors.New("failed to write to buffer! Ring buffer " +
+		"capacity is too small for all values to be written")
+	errBufferSizeIsZero = errors.New("failed to create a new ring buffer! " +
+		"Capacity / size cannot be zero")
+	errDataLengthIsZero = errors.New("failed to write to buffer! The amount of " +
+		"data to write is zero")
+)
+
+// New creates a new ring buffer with a fixed zero-indexed capacity and specified type
 // constrained by the BufferType interface
-func NewRingBuffer[T BufferType](size int) *RingBuffer[T] {
+func New[T BufferType](capacity int) (*RingBuffer[T], error) {
+	if capacity <= 0 {
+		return nil, errBufferSizeIsZero
+	}
 	return &RingBuffer[T]{
-		buffer: make([]T, size),
-		size:   size,
-	}
+		buffer:   make([]T, capacity),
+		capacity: capacity,
+		isFull:   false,
+		isEmpty:  true,
+	}, nil
 }
 
-// Add inserts a new element into the thread-safe buffer, overwriting the oldest element
-// if the buffer is full
-func (rb *RingBuffer[T]) Add(value T) {
+// String converts the capacity, writeIndex pointer, count of elements, and contents of
+// the ring buffer into a string, then returns that string
+func (rb *RingBuffer[T]) String() string {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 
-	rb.buffer[rb.write] = value
-	// rb.write acts as a logical pointer that moves forward each time Add(...) is called.
-	// When write reaches the buffer size (rb.size), it wraps around to the beginning of
-	//	the buffer by using the modulo operator
-	rb.write = (rb.write + 1) % rb.size
+	bufferStr := "capacity= " + strconv.Itoa(rb.capacity) +
+		", writeIndex= " + strconv.Itoa(rb.writeIndex) +
+		", count= " + strconv.Itoa(rb.count) +
+		", isFull= " + strconv.FormatBool(rb.isFull) +
+		", isEmpty= " + strconv.FormatBool(rb.isEmpty) +
+		", buffer= ["
+	lastElement := len(rb.buffer) - 1
 
-	if rb.count < rb.size {
-		// Only increment the count of elements in the buffer when the buffer isn't full
-		rb.count++
+	for i := range rb.buffer {
+		if i == lastElement {
+			bufferStr += fmt.Sprintf("%v", rb.buffer[i])
+		} else {
+			bufferStr += fmt.Sprintf("%v", rb.buffer[i]) + ","
+		}
 	}
+	bufferStr += "]"
+	return bufferStr
 }
 
-// Get returns the contents of the buffer in "First-In First-Out" (FIFO) order
-func (rb *RingBuffer[T]) Get() []T {
+// Read returns the contents of the buffer in "First-In First-Out" (FIFO) order
+func (rb *RingBuffer[T]) Read() (result []T) {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 
-	result := make([]T, rb.count)
+	result = make([]T, 0, rb.count)
+
 	for i := 0; i < rb.count; i++ {
-		index := (rb.write + rb.size - rb.count + i) % rb.size
+		index := (rb.writeIndex + rb.capacity - rb.count + i) % rb.capacity
 		result = append(result, rb.buffer[index])
 	}
 	return result
 }
 
-// Len returns the number of elements in the thread-safe buffer
-func (rb *RingBuffer[T]) Len() int {
+// Write inserts one element into the thread-safe buffer, overwriting the oldest element
+// if the buffer is full
+func (rb *RingBuffer[T]) Write(value T) error {
+	rb.mut.Lock()
+	defer rb.mut.Unlock()
+
+	rb.buffer[rb.writeIndex] = value
+	// rb.writeIndex acts as a logical pointer that moves forward each time Write(...)
+	//	is called.
+	// When writeIndex reaches the buffer capacity, it wraps around to the beginning of
+	//	the buffer by using the modulo operator
+	rb.writeIndex = (rb.writeIndex + 1) % rb.capacity
+
+	if rb.count < rb.capacity {
+		// Only increment the count of elements in the buffer when the buffer isn't full
+		rb.count++
+	}
+	if rb.count == rb.capacity {
+		rb.isFull = true
+	} else if rb.count == 0 && rb.writeIndex == rb.count {
+		rb.isEmpty = true
+	} else {
+		rb.isEmpty = false
+	}
+	return nil
+}
+
+func (rb *RingBuffer[T]) WriteValues(values []T) error {
+	if len(values) > rb.capacity {
+		return errBufferSizeTooSmall
+	} else if len(values) == 0 {
+		return errDataLengthIsZero
+	}
+
+	for _, val := range values {
+		if err := rb.Write(val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Reset recreates a new ring buffer of the same exact capacity
+func (rb *RingBuffer[T]) Reset() {
+	rb.mut.Lock()
+	defer rb.mut.Unlock()
+
+	rb.buffer = make([]T, rb.capacity)
+	rb.count = 0      // there's nothing (no elements/values) in the buffer, of course
+	rb.writeIndex = 0 // reset the logical pointer to the beginning of the buffer
+	rb.isEmpty = true // a zero'd array is, by definition, empty
+	rb.isFull = false // the buffer is no longer full
+}
+
+// Length returns the number of elements / values within the buffer.
+//
+// For getting the total capacity of the buffer, use Size()
+func (rb *RingBuffer[T]) Length() int {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 	return rb.count
 }
 
-// Reset recreates a new ring buffer of the same exact size
-func (rb *RingBuffer[T]) Reset() {
-	rb.mut.Lock()
-	defer rb.mut.Unlock()
-
-	rb.buffer = make([]T, rb.size)
-	rb.write = 0 // reset the write logical pointer to the start of the buffer
-	rb.count = 0 // there's nothing in the buffer, of course
-}
-
-// Size returns the size of the ring buffer itself, as opposed to the number of elements
-// within the buffer
+// Size returns the zero-indexed capacity of the ring buffer itself, as opposed to the
+// number of elements within the buffer.
+//
+// For getting the number of elements in a buffer, use Length()
 func (rb *RingBuffer[T]) Size() int {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
-	return rb.size
+	return rb.capacity
 }
 
-// String converts the size, write pointer, count of elements, and contents of the ring
-// buffer into a string, then returns that string
-func (rb *RingBuffer[T]) String() string {
+func (rb *RingBuffer[T]) IsFull() bool {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
+	return rb.isFull
+}
 
-	bufferStr := "size= " + strconv.Itoa(rb.size) +
-		", write= " + strconv.Itoa(rb.write) +
-		", count= " + strconv.Itoa(rb.count) +
-		", buffer= {"
-	lastElement := len(rb.buffer) - 1
-
-	for i := range rb.buffer {
-		// FYI: https://ectobit.com/blog/check-type-of-generic-parameter/
-		// Checking the type of generic parameter is kinda weird in Go ...
-		switch any(rb.buffer).(type) {
-		case string:
-			if i == lastElement {
-				bufferStr += fmt.Sprintf("%v", rb.buffer[i])
-			} else {
-				bufferStr += fmt.Sprintf("%v", rb.buffer[i]) + ","
-			}
-		case float32, float64:
-			if i == lastElement {
-				bufferStr += fmt.Sprintf("%.2f", rb.buffer[i])
-			} else {
-				bufferStr += fmt.Sprintf("%.2f", rb.buffer[i]) + ","
-			}
-		case int, int32, int64:
-			if i == lastElement {
-				bufferStr += fmt.Sprintf("%d", rb.buffer[i])
-			} else {
-				bufferStr += fmt.Sprintf("%d", rb.buffer[i]) + ","
-			}
-		case bool:
-			if i == lastElement {
-				bufferStr += fmt.Sprintf("%t", rb.buffer[i])
-			} else {
-				bufferStr += fmt.Sprintf("%t", rb.buffer[i]) + ","
-			}
-		}
-	}
-	bufferStr += "}"
-	return bufferStr
+func (rb *RingBuffer[T]) IsEmpty() bool {
+	rb.mut.Lock()
+	defer rb.mut.Unlock()
+	return rb.isEmpty
 }
