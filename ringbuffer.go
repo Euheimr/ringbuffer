@@ -53,6 +53,45 @@ func New[T BufferType](capacity int) (*RingBuffer[T], error) {
 	}, nil
 }
 
+// NewSize recreates a new ring buffer with a different capacity / size, but with the same
+// data as the old ring buffer. The NEW capacity cannot be smaller than the number of values
+// or elements contained in the OLD buffer.
+func (rb *RingBuffer[T]) NewSize(capacity int) (*RingBuffer[T], error) {
+	rb.mut.Lock()
+	defer rb.mut.Unlock()
+
+	var (
+		full  bool
+		empty bool
+	)
+
+	if capacity <= 0 {
+		return nil, errBufferSizeIsZero
+	}
+
+	if rb.values > capacity {
+		return nil, errBufferSizeTooSmall
+	}
+
+	if rb.values == capacity {
+		full = true
+	} else if rb.values == 0 {
+		empty = true
+	}
+
+	newBuffer := make([]T, capacity)
+	newBuffer = rb.buffer
+
+	return &RingBuffer[T]{
+		buffer:     newBuffer,
+		capacity:   capacity,
+		values:     rb.values,
+		writeIndex: rb.writeIndex,
+		isFull:     full,
+		isEmpty:    empty,
+	}, nil
+}
+
 // String converts the capacity, writeIndex pointer, count of elements, and contents of
 // the ring buffer into a string, then returns that string
 func (rb *RingBuffer[T]) String() string {
