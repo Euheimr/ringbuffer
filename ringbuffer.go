@@ -18,7 +18,7 @@ type RingBuffer[T BufferType] struct {
 	buffer     []T
 	capacity   int
 	writeIndex int
-	count      int
+	values     int        // Number of elements stored within the buffer
 	isFull     bool
 	isEmpty    bool
 	mut        sync.Mutex
@@ -55,7 +55,7 @@ func (rb *RingBuffer[T]) String() string {
 
 	bufferStr := "capacity= " + strconv.Itoa(rb.capacity) +
 		", writeIndex= " + strconv.Itoa(rb.writeIndex) +
-		", count= " + strconv.Itoa(rb.count) +
+		", values= " + strconv.Itoa(rb.values) +
 		", isFull= " + strconv.FormatBool(rb.isFull) +
 		", isEmpty= " + strconv.FormatBool(rb.isEmpty) +
 		", buffer= ["
@@ -77,10 +77,10 @@ func (rb *RingBuffer[T]) Read() (result []T) {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 
-	result = make([]T, 0, rb.count)
+	result = make([]T, 0, rb.values)
 
-	for i := 0; i < rb.count; i++ {
-		index := (rb.writeIndex + rb.capacity - rb.count + i) % rb.capacity
+	for i := 0; i < rb.values; i++ {
+		index := (rb.writeIndex + rb.capacity - rb.values + i) % rb.capacity
 		result = append(result, rb.buffer[index])
 	}
 	return result
@@ -99,13 +99,13 @@ func (rb *RingBuffer[T]) Write(value T) error {
 	//	the buffer by using the modulo operator
 	rb.writeIndex = (rb.writeIndex + 1) % rb.capacity
 
-	if rb.count < rb.capacity {
-		// Only increment the count of elements in the buffer when the buffer isn't full
-		rb.count++
+	if rb.values < rb.capacity {
+		// Only increment the values of elements in the buffer when the buffer isn't full
+		rb.values++
 	}
-	if rb.count == rb.capacity {
+	if rb.values == rb.capacity {
 		rb.isFull = true
-	} else if rb.count == 0 && rb.writeIndex == rb.count {
+	} else if rb.values == 0 && rb.writeIndex == rb.values {
 		rb.isEmpty = true
 	} else {
 		rb.isEmpty = false
@@ -134,7 +134,7 @@ func (rb *RingBuffer[T]) Reset() {
 	defer rb.mut.Unlock()
 
 	rb.buffer = make([]T, rb.capacity)
-	rb.count = 0      // there's nothing (no elements/values) in the buffer, of course
+	rb.values = 0     // there's nothing (no elements/values) in the buffer, of course
 	rb.writeIndex = 0 // reset the logical pointer to the beginning of the buffer
 	rb.isEmpty = true // a zero'd array is, by definition, empty
 	rb.isFull = false // the buffer is no longer full
@@ -146,7 +146,7 @@ func (rb *RingBuffer[T]) Reset() {
 func (rb *RingBuffer[T]) Length() int {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
-	return rb.count
+	return rb.values
 }
 
 // Size returns the zero-indexed capacity of the ring buffer itself, as opposed to the
