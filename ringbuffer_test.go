@@ -88,8 +88,8 @@ func TestNewSize(t *testing.T) {
 		name     string
 		capacity int
 	}{
-		{"zero capacity error test", 0},
-		{"buffer too small error test", 5},
+		{"zero capacity", 0},
+		{"buffer too small", 5},
 		{"resize buffer", 5},
 	}
 
@@ -100,26 +100,27 @@ func TestNewSize(t *testing.T) {
 			case "zero capacity":
 				rb, err := New[int](5)
 				rb, err = rb.NewSize(test.capacity)
-				if !errors.Is(err, errBufferSizeIsZero) {
+				if errors.Is(err, errBufferSizeIsZero) {
+					t.Log("zero size buffer error expected, all is ok!")
+				} else {
 					t.Errorf("zero length buffer should be producing an error but incorrectly returns: %s", err)
 					t.Fail()
 				}
+
 			case "buffer too small":
 				rb, err := New[int](test.capacity)
 				rb.WriteValues([]int{1, 2, 3, 4, 5})
 				rb, err = rb.NewSize(2)
-				if !errors.Is(err, errBufferSizeTooSmall) {
+				if errors.Is(err, errBufferSizeTooSmall) {
+					t.Log("buffer size too small error expected, all is ok!")
+				} else {
 					t.Errorf("buffer size smaller than the number of values should produce an error but incorrectly returns: %s", err)
 					t.Fail()
 				}
 			case "resize buffer":
 				rbOld, _ := New[int](test.capacity)
 				for i := 0; i < test.capacity-2; i++ {
-					err := rbOld.Write(i)
-					if err != nil {
-						t.Errorf("failed to write to buffer: %s", err)
-						t.Fail()
-					}
+					rbOld.Write(i)
 				}
 				rbNew, err := rbOld.NewSize(test.capacity - 2)
 				if err != nil {
@@ -176,17 +177,13 @@ func TestWrite(t *testing.T) {
 		rb, _ := New[string](capacity)
 
 		if !rb.isEmpty {
-			t.Errorf("buffer should be empty, but it is not")
+			t.Errorf("buffer should be empty but it is not, expected %v but got %v", true, rb.isEmpty)
 			t.Fail()
 		}
 
 		// Write testString to buffer and check that the object state is as it should be
 		for _, str := range testString {
-			err := rb.Write(str)
-			if err != nil {
-				t.Errorf("test failed to write to buffer: %s", err)
-				t.Fail()
-			}
+			rb.Write(str)
 		}
 		if !reflect.DeepEqual(testString, rb.Read()) {
 			t.Errorf("incorrect result on Read(), expected %s but got %s", testString, rb.Read())
@@ -208,11 +205,7 @@ func TestWrite(t *testing.T) {
 		// Now test overwriting old values of the buffer with testString2. Make sure it
 		// writes and reads as expected
 		for _, str := range testString2 {
-			err := rb.Write(str)
-			if err != nil {
-				t.Errorf("test failed to write to buffer: %s", err)
-				t.Fail()
-			}
+			rb.Write(str)
 		}
 		if !reflect.DeepEqual(expected, rb.Read()) {
 			t.Errorf("incorrect result on Read(), expected %s but got %s", expected, rb.Read())
@@ -425,10 +418,8 @@ func TestIsEmpty(t *testing.T) {
 		if rb.isEmpty != rb.IsEmpty() {
 			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", true, rb.IsEmpty())
 		}
-		if err := rb.Write("a"); err != nil {
-			t.Errorf("failed to write to buffer: %s", err)
-			t.Fail()
-		}
+
+		rb.Write("a")
 		if rb.IsEmpty() {
 			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", false, rb.IsEmpty())
 		}

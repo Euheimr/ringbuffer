@@ -10,8 +10,8 @@ import (
 // BufferType provides constraints on the types that may be used for a New RingBuffer
 type BufferType interface {
 	int | int16 | int32 | int64 |
-		byte | uint | uint16 | uint32 | uint64 |
-		float32 | float64 | bool | string
+	byte | uint | uint16 | uint32 | uint64 |
+	float32 | float64 | bool | string
 }
 
 // RingBuffer is effectively a fixed-size container as a data structure. Fields defined
@@ -25,8 +25,8 @@ type RingBuffer[T BufferType] struct {
 	capacity     int        // Total size of the buffer
 	elementCount int        // Number of values stored within the buffer
 	writeIndex   int        // The next index to write into the buffer when Write() is called
-	isFull       bool       // Flag to tell when the buffer has been overwritten at some point
-	isEmpty      bool       // Flag for telling when the buffer has been Reset() or the buffer was newly created but has no stored values
+	isFull       bool       // true when the buffer capacity matches elementCount
+	isEmpty      bool       // true when the buffer has been Reset() or elementCount == 0
 }
 
 // Error handling statements
@@ -54,8 +54,8 @@ func New[T BufferType](capacity int) (*RingBuffer[T], error) {
 }
 
 // NewSize recreates a new ring buffer with a different capacity / size, but with the same
-// data as the old ring buffer. The NEW capacity cannot be smaller than the number of values
-// or elements contained in the OLD buffer.
+// data as the old ring buffer. The NEW capacity cannot be smaller than the number of
+// values or elements contained in the OLD buffer.
 func (rb *RingBuffer[T]) NewSize(capacity int) (*RingBuffer[T], error) {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
@@ -132,29 +132,29 @@ func (rb *RingBuffer[T]) Read() (result []T) {
 
 // Write inserts one element into the thread-safe buffer, overwriting the oldest element
 // if the buffer is full
-func (rb *RingBuffer[T]) Write(value T) error {
+func (rb *RingBuffer[T]) Write(value T) {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 
 	rb.buffer[rb.writeIndex] = value
+
 	// rb.writeIndex acts as a logical pointer that moves forward each time Write(...)
 	//	is called.
 	// When writeIndex reaches the buffer capacity, it wraps around to the beginning of
 	//	the buffer by using the modulo operator
 	rb.writeIndex = (rb.writeIndex + 1) % rb.capacity
 
+	// Only increment the elementCount of elements in the buffer when the buffer
+	// isn't full
 	if rb.elementCount < rb.capacity {
-		// Only increment the elementCount of elements in the buffer when the buffer isn't full
 		rb.elementCount++
 	}
 	if rb.elementCount == rb.capacity {
 		rb.isFull = true
-	} else if rb.elementCount == 0 && rb.writeIndex == rb.elementCount {
-		rb.isEmpty = true
-	} else {
+	}
+	if rb.elementCount > 0 {
 		rb.isEmpty = false
 	}
-	return nil
 }
 
 func (rb *RingBuffer[T]) WriteValues(values []T) error {
@@ -165,9 +165,7 @@ func (rb *RingBuffer[T]) WriteValues(values []T) error {
 	}
 
 	for _, val := range values {
-		if err := rb.Write(val); err != nil {
-			return err
-		}
+		rb.Write(val)
 	}
 	return nil
 }
