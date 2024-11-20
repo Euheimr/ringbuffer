@@ -91,6 +91,7 @@ func TestNewSize(t *testing.T) {
 		{"zero capacity", 0},
 		{"buffer too small", 5},
 		{"resize buffer", 5},
+		{"resize buffer with no values", 5},
 	}
 
 	for _, test := range tests {
@@ -140,6 +141,21 @@ func TestNewSize(t *testing.T) {
 				}
 				if rbOld.writeIndex != rbNew.writeIndex {
 					t.Errorf("old buffer writeIndex is different from the new buffer")
+					t.Fail()
+				}
+			case "resize buffer with no values":
+				rbOld, _ := New[int](test.capacity)
+				rbNew, _ := rbOld.NewSize(test.capacity - 2)
+				if !reflect.DeepEqual(rbOld.Read(), rbNew.Read()) {
+					t.Errorf("old empty buffer is different from the new empty buffer")
+					t.Fail()
+				}
+				if !rbNew.isEmpty {
+					t.Errorf("resized buffer should be empty but isEmpty == %v", rbNew.isEmpty)
+					t.Fail()
+				}
+				if rbNew.isFull {
+					t.Errorf("resized buffer should not be full but isFull == %v", rbNew.isFull)
 					t.Fail()
 				}
 			}
