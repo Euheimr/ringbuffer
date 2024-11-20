@@ -7,6 +7,9 @@ bin/
 vendor/
 log/
 
+coverage.html
+coverage.out
+
 *.env
 config.toml
 
