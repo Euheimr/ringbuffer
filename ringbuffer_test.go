@@ -109,10 +109,12 @@ func TestNewSize(t *testing.T) {
 				}
 
 			case "buffer too small":
-				rb, err := New[int](test.capacity)
-				rb.WriteValues([]int{1, 2, 3, 4, 5})
-				rb, err = rb.NewSize(2)
-				if errors.Is(err, errBufferSizeTooSmall) {
+				rb, _ := New[int](test.capacity)
+				if err := rb.WriteValues([]int{1, 2, 3, 4, 5}); err != nil {
+					t.Logf("failed to write to buffer: %s", err)
+				}
+				rb, err := rb.NewSize(2)
+				if errors.Is(err, errBufferResizeTooSmall) {
 					t.Log("buffer size too small error expected, all is ok!")
 				} else {
 					t.Errorf("buffer size smaller than the number of values should produce an error but incorrectly returns: %s", err)

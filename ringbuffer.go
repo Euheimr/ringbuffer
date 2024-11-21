@@ -10,8 +10,8 @@ import (
 // BufferType provides constraints on the types that may be used for a New RingBuffer
 type BufferType interface {
 	int | int16 | int32 | int64 |
-	byte | uint | uint16 | uint32 | uint64 |
-	float32 | float64 | bool | string
+		byte | uint | uint16 | uint32 | uint64 |
+		float32 | float64 | bool | string
 }
 
 // RingBuffer is effectively a fixed-size container as a data structure. Fields defined
@@ -35,6 +35,8 @@ var (
 		"Capacity / size cannot be zero")
 	errBufferSizeTooSmall = errors.New("failed to write to buffer! Ring buffer total " +
 		"capacity is too small for all values to be written")
+	errBufferResizeTooSmall = errors.New("failed to resize buffer! The number of " +
+		"elements/values in the existing buffer exceeds the capacity for the new buffer")
 	errDataLengthIsZero = errors.New("failed to write to buffer! The amount of " +
 		"data to write is zero")
 )
@@ -70,7 +72,7 @@ func (rb *RingBuffer[T]) NewSize(capacity int) (*RingBuffer[T], error) {
 	}
 
 	if rb.elementCount > capacity {
-		return nil, errBufferSizeTooSmall
+		return nil, errBufferResizeTooSmall
 	}
 
 	if rb.elementCount == capacity {
