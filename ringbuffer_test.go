@@ -410,6 +410,7 @@ func TestIsFull(t *testing.T) {
 		rb, _ := New[string](3)
 		if rb.IsFull() {
 			t.Errorf("incorrect IsFull() state, expected %v but got %v", false, rb.IsFull())
+			t.Fail()
 		}
 		if err := rb.WriteMany([]string{"a", "b", "c"}); err != nil {
 			t.Errorf("failed to write to buffer: %s", err)
@@ -435,11 +436,13 @@ func TestIsEmpty(t *testing.T) {
 		}
 		if rb.isEmpty != rb.IsEmpty() {
 			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", true, rb.IsEmpty())
+			t.Fail()
 		}
 
 		rb.Write("a")
 		if rb.IsEmpty() {
 			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", false, rb.IsEmpty())
+			t.Fail()
 		}
 	})
 }
