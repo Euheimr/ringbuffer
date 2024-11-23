@@ -5,6 +5,12 @@ implementations do not allow overwrites when the buffer is full, but I wanted th
 
 ## Example usage
 
+First, get the package:
+
+   `go get github.com/euheimr/ringbuffer`
+
+Example usage:
+
 ```go
 package main
 
@@ -15,6 +21,10 @@ import (
 
 func main() {
    capacity := 3
+   // Create a new ring buffer of type `string` and fixed `capacity` or size. The capacity
+   //  defines how many elements are in the buffer. 
+   // Please note that the buffer itself is zero-indexed. In other words, with a capacity
+   //  of 3, the last index of the buffer is 2, and the first element is 0.
    rb, err := ringbuffer.New[string](capacity)
    if err != nil {
       fmt.Println(err.Error())
@@ -25,21 +35,22 @@ func main() {
    fmt.Println(rb.Read())   // rb.Read() == []string{"test1"}
 
    // Write multiple values
-   if err = rb.WriteValues([]string{"test2", "test3", "test4"}); err != nil {
+   if err = rb.WriteMany([]string{"test2", "test3", "test4"}); err != nil {
       fmt.Println(err.Error())
    }
 
    // Read the buffer in order of FIFO (first-in-first-out)
    fmt.Println(rb.Read())  // rb.Read() == []string{"test2", "test3", "test4"}
    
-   // You can recreate the buffer with a new size, but must be equal or greater than the
-   // number of existing elements. 
-   // If you want to make it smaller, call rb.Reset() then rb.NewSize(...)
+   // You can recreate the buffer with a new size! However, it MUST be EQUAL or GREATER 
+   // than the number of EXISTING elements. 
+   // If you want to make it smaller than the existing buffer, you must call rb.Reset() 
+   // to clear the buffer data, then rb.NewSize(...) with the smaller size capacity
    rb, err = rb.NewSize(5)
    if err != nil {
 	   fmt.Println(err.Error())
    }
-   if err = rb.WriteValues([]string{"test5","test6"}); err != nil {
+   if err = rb.WriteMany([]string{"test5","test6"}); err != nil {
 	   fmt.Println(err.Error())
    }
 
