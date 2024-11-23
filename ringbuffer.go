@@ -159,7 +159,13 @@ func (rb *RingBuffer[T]) Write(value T) {
 	}
 }
 
-func (rb *RingBuffer[T]) WriteValues(values []T) error {
+// WriteMany first checks if the number of values is greater than the buffer or if the
+// length of values is zero. If either of those conditions are true, then their respective
+// error is returned.
+//
+// Otherwise, it iterates over each slice of elements / values passed
+// into it and calls Write for each element / value.
+func (rb *RingBuffer[T]) WriteMany(values []T) error {
 	if len(values) > rb.capacity {
 		return errBufferSizeTooSmall
 	} else if len(values) == 0 {

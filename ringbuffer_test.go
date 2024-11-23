@@ -110,7 +110,7 @@ func TestNewSize(t *testing.T) {
 
 			case "buffer too small":
 				rb, _ := New[int](test.capacity)
-				if err := rb.WriteValues([]int{1, 2, 3, 4, 5}); err != nil {
+				if err := rb.WriteMany([]int{1, 2, 3, 4, 5}); err != nil {
 					t.Logf("failed to write to buffer: %s", err)
 				}
 				rb, err := rb.NewSize(2)
@@ -168,7 +168,7 @@ func TestNewSize(t *testing.T) {
 func TestRead(t *testing.T) {
 	t.Run("Read()", func(t *testing.T) {
 		rb, _ := New[string](3)
-		rb.WriteValues([]string{"a", "b", "c"})
+		rb.WriteMany([]string{"a", "b", "c"})
 		expected := []string{"a", "b", "c"}
 		result := rb.Read()
 		if !reflect.DeepEqual(expected, result) {
@@ -244,23 +244,23 @@ func TestWrite(t *testing.T) {
 	})
 }
 
-func TestWriteValues(t *testing.T) {
-	t.Run("TestWriteValues()", func(t *testing.T) {
+func TestWriteMany(t *testing.T) {
+	t.Run("TestWriteMany()", func(t *testing.T) {
 		rb, _ := New[string](3)
 		empty := []string{}
 		tooManyValues := []string{"a", "b", "c", "d"}
 
 		// test an empty string or value
-		if err := rb.WriteValues(empty); err == nil {
+		if err := rb.WriteMany(empty); err == nil {
 			t.Errorf("an error was expected when zero values are written; %s", err)
 			t.Fail()
 		}
 		// test writing too many values
-		if err := rb.WriteValues(tooManyValues); err == nil {
+		if err := rb.WriteMany(tooManyValues); err == nil {
 			t.Errorf("an error was expected when too values are written; %s", err)
 			t.Fail()
 		}
-		err := rb.WriteValues([]string{"1", "2", "3"})
+		err := rb.WriteMany([]string{"1", "2", "3"})
 		if err != nil {
 			t.Errorf("an error was not expected when writing values: %s", err)
 			t.Fail()
@@ -287,7 +287,7 @@ func TestString(t *testing.T) {
 			switch test.bufferType {
 			case "string":
 				rb, _ := New[string](test.capacity)
-				err := rb.WriteValues([]string{"a", "b"})
+				err := rb.WriteMany([]string{"a", "b"})
 				if err != nil {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
@@ -295,7 +295,7 @@ func TestString(t *testing.T) {
 				t.Log(rb.String())
 			case "int":
 				rb, _ := New[int](test.capacity)
-				err := rb.WriteValues([]int{1, 2})
+				err := rb.WriteMany([]int{1, 2})
 				if err != nil {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
@@ -303,7 +303,7 @@ func TestString(t *testing.T) {
 				t.Log(rb.String())
 			case "uint":
 				rb, _ := New[uint](test.capacity)
-				err := rb.WriteValues([]uint{1, 2})
+				err := rb.WriteMany([]uint{1, 2})
 				if err != nil {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
@@ -311,7 +311,7 @@ func TestString(t *testing.T) {
 				t.Log(rb.String())
 			case "byte":
 				rb, _ := New[byte](test.capacity)
-				err := rb.WriteValues([]byte{1, 2})
+				err := rb.WriteMany([]byte{1, 2})
 				if err != nil {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
@@ -319,7 +319,7 @@ func TestString(t *testing.T) {
 				t.Log(rb.String())
 			case "float":
 				rb, _ := New[float32](test.capacity)
-				err := rb.WriteValues([]float32{0.5, 1.5})
+				err := rb.WriteMany([]float32{0.5, 1.5})
 				if err != nil {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
@@ -327,7 +327,7 @@ func TestString(t *testing.T) {
 				t.Log(rb.String())
 			case "bool":
 				rb, _ := New[bool](test.capacity)
-				err := rb.WriteValues([]bool{true, true})
+				err := rb.WriteMany([]bool{true, true})
 				if err != nil {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
@@ -342,7 +342,7 @@ func TestReset(t *testing.T) {
 	t.Run("Reset()", func(t *testing.T) {
 		rb, _ := New[string](5)
 		testString := []string{"a", "b", "c", "d", "e"}
-		if err := rb.WriteValues(testString); err != nil {
+		if err := rb.WriteMany(testString); err != nil {
 			t.Errorf("failed to write to buffer: %s", err)
 			t.Fail()
 		}
@@ -383,7 +383,7 @@ func TestLength(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := rb.WriteValues(test.values); err != nil {
+			if err := rb.WriteMany(test.values); err != nil {
 				t.Errorf("failed to write to buffer: %s", err)
 				t.Fail()
 			}
@@ -411,7 +411,7 @@ func TestIsFull(t *testing.T) {
 		if rb.IsFull() {
 			t.Errorf("incorrect IsFull() state, expected %v but got %v", false, rb.IsFull())
 		}
-		if err := rb.WriteValues([]string{"a", "b", "c"}); err != nil {
+		if err := rb.WriteMany([]string{"a", "b", "c"}); err != nil {
 			t.Errorf("failed to write to buffer: %s", err)
 			t.Fail()
 		}
