@@ -14,7 +14,6 @@ on:
 
 env:
   GIST_ID: 9338f65b1df98fef0aa32aabb03296cf
-  GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
 
 jobs:
   build:
@@ -42,11 +41,11 @@ jobs:
       run: go tool cover -func cover.out > cover.out
 
     - name: CI Badges
-      uses: gaelgirodon/ci-badges-action@v1
+      uses: gaelgirodon/ci-badges-action@v1.7.0
       env:
-        GIST_TOKEN: ${{ env.GIST_TOKEN }}
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
       with:
         gist-id: ${{ env.GIST_ID }}
-        token: ${{ env.GIST_TOKEN }}
-        prefix: ringbuffer
+        token: ${{ secrets.GIST_TOKEN }}
+        #prefix: ringbuffer
         ref: false
