@@ -31,10 +31,13 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test
+      run: go test > test.out
+
+    - name: Coverage
+      run: go tool cover -func=cover.out
 
     - name: Setup / Update CI Badges
       uses: gaelgirodon/ci-badges-action@v1
       with:
-        gist-id: f3cc4b36b275ce780458307d3f35c12c
+        gist-id: 9338f65b1df98fef0aa32aabb03296cf
         token: ${{ secrets.GIST_TOKEN }}
