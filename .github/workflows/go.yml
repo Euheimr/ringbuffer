@@ -11,6 +11,11 @@ on:
   pull_request:
     branches:
     - master
+
+env:
+  GIST_ID: 9338f65b1df98fef0aa32aabb03296cf
+  GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,8 +41,12 @@ jobs:
     - name: Coverage
       run: go tool cover -func cover.out > cover.out
 
-    - name: Setup / Update CI Badges
+    - name: CI Badges
       uses: gaelgirodon/ci-badges-action@v1
+      env:
+        GIST_TOKEN: ${{ env.GIST_TOKEN }}
       with:
-        gist-id: 9338f65b1df98fef0aa32aabb03296cf
-        token: ${{ secrets.GIST_TOKEN }}
+        gist-id: ${{ env.GIST_ID }}
+        token: ${{ env.GIST_TOKEN }}
+        prefix: ringbuffer
+        ref: false
