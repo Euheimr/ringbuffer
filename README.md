@@ -1,4 +1,5 @@
 # Ring Buffer (circular buffer)
+[![License](https://img.shields.io/:license-MIT-blue.svg)](https://opensource.org/licenses/MIT) ![master](https://github.com/euheimr/ringbuffer/actions/workflows/go.yml/badge.svg?branch=master) 
 
 A ring Buffer is a fixed-size container as a data structure. A lot of ring buffer 
 implementations do not allow overwrites when the buffer is full, but I wanted that functionality, so I made it.

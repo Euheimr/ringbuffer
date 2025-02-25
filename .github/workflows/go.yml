@@ -32,3 +32,9 @@ jobs:
 
     - name: Test
       run: go test
+
+    - name: Setup / Update CI Badges
+      uses: gaelgirodon/ci-badges-action@v1
+      with:
+        gist-id: f3cc4b36b275ce780458307d3f35c12c
+        token: ${{ secrets.GIST_TOKEN }}
