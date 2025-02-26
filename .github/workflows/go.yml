@@ -12,14 +12,15 @@ on:
     branches:
     - master
 
-env:
-  GIST_ID: 9338f65b1df98fef0aa32aabb03296cf
-  GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+#env:
+#  GIST_ID: 9338f65b1df98fef0aa32aabb03296cf
+#  GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         go-version: ['1.20.x','1.21.x','1.22.x','1.23.x']
     steps:
@@ -30,23 +31,30 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install dependencies
-      run: go get .
+      run: go mod download
 
     - name: Build
       run: go build -v ./...
 
-    - name: Test
-      run: go test -o test.out
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test
+        run: go test -race -covermode atomic -coverprofile=profile.cov ./...
 
-    - name: Coverage
-      run: go tool cover -func cover.out > cover.out
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: profile.cov
+          flag-name: Go-${{ matrix.go-version }}
+          parallel: true
 
-    - name: CI Badges
-      uses: gaelgirodon/ci-badges-action@v1.7.0
-      env:
-        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-      with:
-        gist-id: ${{ env.GIST_ID }}
-        token: ${{ env.GIST_TOKEN }}
-        #prefix: ringbuffer
-        ref: false
+  # notifies that all test jobs are finished.
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true
