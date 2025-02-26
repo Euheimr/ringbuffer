@@ -25,8 +25,6 @@ type RingBuffer[T BufferType] struct {
 	capacity     int        // Total size of the buffer
 	elementCount int        // Number of values stored within the buffer
 	writeIndex   int        // The next index to write into the buffer when Write() is called
-	isFull       bool       // true when the buffer capacity matches elementCount
-	isEmpty      bool       // true when the buffer has been Reset() or elementCount == 0
 }
 
 // Error handling statements
@@ -50,8 +48,6 @@ func New[T BufferType](capacity int) (*RingBuffer[T], error) {
 	return &RingBuffer[T]{
 		buffer:   make([]T, capacity),
 		capacity: capacity,
-		isFull:   false,
-		isEmpty:  true,
 	}, nil
 }
 
@@ -62,23 +58,12 @@ func (rb *RingBuffer[T]) NewSize(capacity int) (*RingBuffer[T], error) {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 
-	var (
-		full  bool
-		empty bool
-	)
-
 	if capacity <= 0 {
 		return nil, errBufferSizeIsZero
 	}
 
 	if rb.elementCount > capacity {
 		return nil, errBufferResizeTooSmall
-	}
-
-	if rb.elementCount == capacity {
-		full = true
-	} else if rb.elementCount == 0 {
-		empty = true
 	}
 
 	newBuffer := make([]T, capacity)
@@ -89,8 +74,6 @@ func (rb *RingBuffer[T]) NewSize(capacity int) (*RingBuffer[T], error) {
 		capacity:     capacity,
 		elementCount: rb.elementCount,
 		writeIndex:   rb.writeIndex,
-		isFull:       full,
-		isEmpty:      empty,
 	}, nil
 }
 
@@ -103,8 +86,6 @@ func (rb *RingBuffer[T]) String() string {
 	bufferStr := "capacity= " + strconv.Itoa(rb.capacity) +
 		", writeIndex= " + strconv.Itoa(rb.writeIndex) +
 		", elementCount= " + strconv.Itoa(rb.elementCount) +
-		", isFull= " + strconv.FormatBool(rb.isFull) +
-		", isEmpty= " + strconv.FormatBool(rb.isEmpty) +
 		", buffer= ["
 	lastElement := len(rb.buffer) - 1
 
@@ -133,7 +114,7 @@ func (rb *RingBuffer[T]) Read() (result []T) {
 }
 
 // Write inserts one element into the thread-safe buffer, overwriting the oldest element
-// if the buffer is full
+// (without error) if the buffer is full
 func (rb *RingBuffer[T]) Write(value T) {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
@@ -151,20 +132,14 @@ func (rb *RingBuffer[T]) Write(value T) {
 	if rb.elementCount < rb.capacity {
 		rb.elementCount++
 	}
-	if rb.elementCount == rb.capacity {
-		rb.isFull = true
-	}
-	if rb.elementCount > 0 {
-		rb.isEmpty = false
-	}
 }
 
 // WriteMany first checks if the number of values is greater than the buffer or if the
 // length of values is zero. If either of those conditions are true, then their respective
 // error is returned.
 //
-// Otherwise, it iterates over each slice of elements / values passed
-// into it and calls Write for each element / value.
+// Otherwise, WriteMany iterates over each slice of elements / values passed into it and
+// calls Write for each element / value.
 func (rb *RingBuffer[T]) WriteMany(values []T) error {
 	if len(values) > rb.capacity {
 		return errBufferSizeTooSmall
@@ -178,7 +153,8 @@ func (rb *RingBuffer[T]) WriteMany(values []T) error {
 	return nil
 }
 
-// Reset recreates a new ring buffer of the same exact capacity
+// Reset deletes all data within the buffer by re-allocation but retains the same exact
+// capacity
 func (rb *RingBuffer[T]) Reset() {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
@@ -186,8 +162,6 @@ func (rb *RingBuffer[T]) Reset() {
 	rb.buffer = make([]T, rb.capacity)
 	rb.elementCount = 0 // there's nothing (no elements/values) in the buffer, of course
 	rb.writeIndex = 0   // reset the logical pointer to the beginning of the buffer
-	rb.isEmpty = true   // a zero'd array is, by definition, empty
-	rb.isFull = false   // the buffer is no longer full
 }
 
 // Length returns the number of elements / values within the buffer.
@@ -212,11 +186,11 @@ func (rb *RingBuffer[T]) Size() int {
 func (rb *RingBuffer[T]) IsFull() bool {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
-	return rb.isFull
+	return rb.elementCount == rb.capacity
 }
 
 func (rb *RingBuffer[T]) IsEmpty() bool {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
-	return rb.isEmpty
+	return rb.elementCount == 0 && rb.writeIndex == 0
 }

@@ -152,12 +152,12 @@ func TestNewSize(t *testing.T) {
 					t.Errorf("old empty buffer is different from the new empty buffer")
 					t.Fail()
 				}
-				if !rbNew.isEmpty {
-					t.Errorf("resized buffer should be empty but isEmpty == %v", rbNew.isEmpty)
+				if !rbNew.IsEmpty() {
+					t.Errorf("resized buffer should be empty but isEmpty == %v", rbNew.IsEmpty())
 					t.Fail()
 				}
-				if rbNew.isFull {
-					t.Errorf("resized buffer should not be full but isFull == %v", rbNew.isFull)
+				if rbNew.IsFull() {
+					t.Errorf("resized buffer should not be full but isFull == %v", rbNew.IsFull())
 					t.Fail()
 				}
 			}
@@ -194,8 +194,8 @@ func TestWrite(t *testing.T) {
 	t.Run("TestWrite()", func(t *testing.T) {
 		rb, _ := New[string](capacity)
 
-		if !rb.isEmpty {
-			t.Errorf("buffer should be empty but it is not, expected %v but got %v", true, rb.isEmpty)
+		if !rb.IsEmpty() {
+			t.Errorf("buffer should be empty but it is not, expected %v but got %v", true, rb.IsEmpty())
 			t.Fail()
 		}
 
@@ -211,12 +211,12 @@ func TestWrite(t *testing.T) {
 			t.Errorf("incorrect element count, expected %d but got %d", len(testString), rb.elementCount)
 			t.Fail()
 		}
-		if rb.isFull {
-			t.Errorf("buffer isFull when it should not be, expected %v but got %v", false, rb.isFull)
+		if rb.IsFull() {
+			t.Errorf("buffer isFull when it should not be, expected %v but got %v", false, rb.IsFull())
 			t.Fail()
 		}
-		if rb.isEmpty {
-			t.Errorf("buffer isEmpty when it should not be, expected %v but got %v", false, rb.isEmpty)
+		if rb.IsEmpty() {
+			t.Errorf("buffer isEmpty when it should not be, expected %v but got %v", false, rb.IsEmpty())
 			t.Fail()
 		}
 
@@ -233,12 +233,12 @@ func TestWrite(t *testing.T) {
 			t.Errorf("incorrect element count, expected %d but got %d", capacity, rb.elementCount)
 			t.Fail()
 		}
-		if !rb.isFull {
-			t.Errorf("buffer !isFull when it SHOULD be FULL, expected %v but got %v", true, rb.isFull)
+		if !rb.IsFull() {
+			t.Errorf("buffer !isFull when it SHOULD be FULL, expected %v but got %v", true, rb.IsFull())
 			t.Fail()
 		}
-		if rb.isEmpty {
-			t.Errorf("buffer isEmpty when it should not be, expected %v but got %v", false, rb.isEmpty)
+		if rb.IsEmpty() {
+			t.Errorf("buffer isEmpty when it should not be, expected %v but got %v", false, rb.IsEmpty())
 			t.Fail()
 		}
 	})
@@ -359,12 +359,12 @@ func TestReset(t *testing.T) {
 			t.Errorf("incorrect writeIndex, expected %d but got %d", 0, rb.writeIndex)
 			t.Fail()
 		}
-		if !rb.isEmpty {
-			t.Errorf("buffer is not empty when it should be, expected %v but got %v", true, rb.isEmpty)
+		if !rb.IsEmpty() {
+			t.Errorf("buffer is not empty when it should be, expected %v but got %v", true, rb.IsEmpty())
 			t.Fail()
 		}
-		if rb.isFull {
-			t.Errorf("buffer isFull when it should NOT be, expected %v but got %v", false, rb.isFull)
+		if rb.IsFull() {
+			t.Errorf("buffer isFull when it should NOT be, expected %v but got %v", false, rb.IsFull())
 			t.Fail()
 		}
 	})
@@ -402,29 +402,53 @@ func TestSize(t *testing.T) {
 			t.Errorf("incorrect size, expected %d but got %d", 3, rb.Size())
 			t.Fail()
 		}
+		rb, _ = rb.NewSize(5)
+		if rb.Size() != 5 {
+			t.Errorf("incorrect size, expected %d but got %d", 5, rb.Size())
+			t.Fail()
+		}
 	})
 }
 
 func TestIsFull(t *testing.T) {
-	t.Run("IsFull()", func(t *testing.T) {
-		rb, _ := New[string](3)
-		if rb.IsFull() {
-			t.Errorf("incorrect IsFull() state, expected %v but got %v", false, rb.IsFull())
-			t.Fail()
-		}
-		if err := rb.WriteMany([]string{"a", "b", "c"}); err != nil {
-			t.Errorf("failed to write to buffer: %s", err)
-			t.Fail()
-		}
-		if rb.isFull != rb.IsFull() {
-			t.Errorf("rb.IsFull() does not match the state of rb.isFull, expected %v but got %v", true, rb.IsFull())
-			t.Fail()
-		}
-		if !rb.IsFull() {
-			t.Errorf("incorrect isFull() state, expected %v but got %v", true, rb.IsFull())
-			t.Fail()
-		}
-	})
+	tests := []struct {
+		name string
+	}{
+		{"normal"},
+		{"after Reset()"},
+	}
+	rb, _ := New[string](3)
+	testStr := []string{"a", "b", "c"}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			switch test.name {
+			case "normal":
+				if rb.IsFull() {
+					t.Errorf("incorrect IsFull() state, expected %v but got %v", false, rb.IsFull())
+					t.Fail()
+				}
+				if err := rb.WriteMany(testStr); err != nil {
+					t.Errorf("failed to write to buffer: %s", err)
+					t.Fail()
+				}
+				if !rb.IsFull() {
+					t.Errorf("incorrect isFull() state, expected %v but got %v", true, rb.IsFull())
+					t.Fail()
+				}
+			case "after Reset()":
+				rb.Reset()
+				if err := rb.WriteMany(testStr); err != nil {
+					t.Errorf("failed to write to buffer: %s", err)
+					t.Fail()
+				}
+				if !rb.IsFull() {
+					t.Errorf("incorrect isFull() state, expected %v but got %v", true, rb.IsFull())
+					t.Fail()
+				}
+			}
+		})
+	}
 }
 
 func TestIsEmpty(t *testing.T) {
@@ -434,14 +458,15 @@ func TestIsEmpty(t *testing.T) {
 			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", true, rb.IsEmpty())
 			t.Fail()
 		}
-		if rb.isEmpty != rb.IsEmpty() {
-			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", true, rb.IsEmpty())
-			t.Fail()
-		}
-
 		rb.Write("a")
 		if rb.IsEmpty() {
 			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", false, rb.IsEmpty())
+			t.Fail()
+		}
+
+		rb.Reset()
+		if !rb.IsEmpty() {
+			t.Errorf("incorrect IsEmpty() state, expected %v but got %v", true, rb.IsEmpty())
 			t.Fail()
 		}
 	})
