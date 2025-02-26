@@ -43,6 +43,8 @@ jobs:
 
     - name: CI Badges
       uses: gaelgirodon/ci-badges-action@v1.7.0
+      env:
+        GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
       with:
         gist-id: ${{ env.GIST_ID }}
         token: ${{ env.GIST_TOKEN }}
