@@ -1,8 +1,16 @@
 # Ring Buffer (circular buffer)
 [![Go](https://github.com/Euheimr/ringbuffer/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/Euheimr/ringbuffer/actions/workflows/go.yml) [![Coverage Status](https://coveralls.io/repos/github/Euheimr/ringbuffer/badge.svg?branch=master)](https://coveralls.io/github/Euheimr/ringbuffer?branch=master) [![License](https://img.shields.io/:license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A ring Buffer is a fixed-size container as a data structure. A lot of ring buffer 
-implementations do not allow overwrites when the buffer is full, but I wanted that functionality, so I made it.
+A ring buffer is a fixed-size container as a data structure. 
+
+A lot of ring buffer implementations do not allow overwrites when the buffer is full... but I wanted that functionality, so I made this.
+If someone desires the ability to default deny overwrites, __please make a pull request__!
+
+
+__Please note__: Even though this implementation allows overwrites, it will *NOT allow* writing more data than the total size of the buffer. 
+
+In other words - a single write must be equal or less than the total size of the ring buffer.
+
 
 ## Example usage
 
