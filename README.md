@@ -71,20 +71,3 @@ func main() {
    fmt.Println(rb.Read())   // rb.Read() == []string{}
 }
 ```
-
-
-## Testing & Coverage
-
-Code coverage is at: **100%**
-
-1. Script: `sh ./coverage.sh`
-2. Or manually:
-
-   a. `go test -coverprofile coverage.out ./...`
-   
-   b. `go tool cover -html coverage.out -o coverage.html`
-3. Then open up `coverage.html` in a web browser
-
-You can also verbosely print out all tests in a terminal by running:
-
-   `go test -cover -v`
