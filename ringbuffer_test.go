@@ -12,7 +12,7 @@ func TestNew(t *testing.T) {
 		expectedType string
 		capacity     int
 	}{
-		{"new buffer, zero capacity", "zero", 0},
+		{"new buffer, zero capacity", "zero size", 0},
 		{"new buffer, string", "string", 5},
 		{"new buffer, int", "int", 5},
 		{"new buffer, byte", "byte", 5},
@@ -24,10 +24,12 @@ func TestNew(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			switch test.expectedType {
-			case "zero":
+			case "zero size":
 				_, err := New[string](test.capacity)
-				if err == nil {
-					t.Errorf("unexpected error when creating a zero length buffer: %s", err)
+				if errors.Is(err, errBufferSizeIsZero) {
+					t.Log("expected error when creating a zero length buffer, all is ok!")
+				} else {
+					t.Errorf("zero size buffer should be producing an error but incorrectly returns: %s", err)
 					t.Fail()
 				}
 			case "string":
@@ -99,7 +101,12 @@ func TestNewSize(t *testing.T) {
 			t.Parallel()
 			switch test.name {
 			case "zero capacity":
-				rb, err := New[int](5)
+				rb, err := New[int](2)
+				if err = rb.WriteMany([]int{0, 1}); err != nil {
+					t.Logf("failed to write to buffer: %s", err)
+					t.Fail()
+				}
+
 				rb, err = rb.NewSize(test.capacity)
 				if errors.Is(err, errBufferSizeIsZero) {
 					t.Log("zero size buffer error expected, all is ok!")
@@ -112,7 +119,9 @@ func TestNewSize(t *testing.T) {
 				rb, _ := New[int](test.capacity)
 				if err := rb.WriteMany([]int{1, 2, 3, 4, 5}); err != nil {
 					t.Logf("failed to write to buffer: %s", err)
+					t.Fail()
 				}
+
 				rb, err := rb.NewSize(2)
 				if errors.Is(err, errBufferResizeTooSmall) {
 					t.Log("buffer size too small error expected, all is ok!")
@@ -128,6 +137,7 @@ func TestNewSize(t *testing.T) {
 				rbNew, err := rbOld.NewSize(test.capacity - 2)
 				if err != nil {
 					t.Errorf("unexpected error when resizing buffer from %v to %v: %s", test.capacity, test.capacity-2, err)
+					t.Fail()
 				}
 				if !reflect.DeepEqual(rbOld.Read(), rbNew.Read()) {
 					t.Errorf("old buffer is different from the new buffer")
@@ -153,11 +163,11 @@ func TestNewSize(t *testing.T) {
 					t.Fail()
 				}
 				if !rbNew.IsEmpty() {
-					t.Errorf("resized buffer should be empty but isEmpty == %v", rbNew.IsEmpty())
+					t.Errorf("resized buffer should be empty but IsEmpty() == %v", rbNew.IsEmpty())
 					t.Fail()
 				}
 				if rbNew.IsFull() {
-					t.Errorf("resized buffer should not be full but isFull == %v", rbNew.IsFull())
+					t.Errorf("resized buffer should not be full but IsFull() == %v", rbNew.IsFull())
 					t.Fail()
 				}
 			}
@@ -234,11 +244,11 @@ func TestWrite(t *testing.T) {
 			t.Fail()
 		}
 		if !rb.IsFull() {
-			t.Errorf("buffer !isFull when it SHOULD be FULL, expected %v but got %v", true, rb.IsFull())
+			t.Errorf("buffer !IsFull() when it SHOULD be FULL, expected %v but got %v", true, rb.IsFull())
 			t.Fail()
 		}
 		if rb.IsEmpty() {
-			t.Errorf("buffer isEmpty when it should not be, expected %v but got %v", false, rb.IsEmpty())
+			t.Errorf("buffer IsEmpty() when it should NOT be, expected %v but got %v", false, rb.IsEmpty())
 			t.Fail()
 		}
 	})
