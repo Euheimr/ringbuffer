@@ -14,6 +14,7 @@ on:
 
 env:
   GIST_ID: 9338f65b1df98fef0aa32aabb03296cf
+  GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
 
 jobs:
   build:
@@ -44,6 +45,6 @@ jobs:
       uses: gaelgirodon/ci-badges-action@v1.7.0
       with:
         gist-id: ${{ env.GIST_ID }}
-        token: ${{ github.token }}
+        token: ${{ env.GIST_TOKEN }}
         #prefix: ringbuffer
         ref: false
