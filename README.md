@@ -1,5 +1,5 @@
 # Ring Buffer (circular buffer)
-[![Go](https://github.com/Euheimr/ringbuffer/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/Euheimr/ringbuffer/actions/workflows/go.yml) [![Coverage Status](https://coveralls.io/repos/github/Euheimr/ringbuffer/badge.svg?branch=master)](https://coveralls.io/github/Euheimr/ringbuffer?branch=master) [![License](https://img.shields.io/:license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Go Reference](https://pkg.go.dev/badge/github.com/euheimr/ringbuffer.svg)](https://pkg.go.dev/github.com/euheimr/ringbuffer) [![License](https://img.shields.io/:license-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Go](https://github.com/Euheimr/ringbuffer/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/Euheimr/ringbuffer/actions/workflows/go.yml) [![Coverage Status](https://coveralls.io/repos/github/Euheimr/ringbuffer/badge.svg?branch=master)](https://coveralls.io/github/Euheimr/ringbuffer?branch=master)
 
 A ring buffer is a fixed-size container as a data structure. 
 
