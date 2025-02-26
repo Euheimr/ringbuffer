@@ -36,23 +36,19 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test
-        run: go test -race -covermode atomic -coverprofile=profile.cov ./...
+    - name: Test
+      run: go test -v -coverprofile profile.cov ./...
 
-      - name: Send coverage
-        uses: shogo82148/actions-goveralls@v1
-        with:
-          path-to-profile: profile.cov
-          flag-name: Go-${{ matrix.go-version }}
-          parallel: true
+    - name: Send coverage
+      uses: shogo82148/actions-goveralls@v1
+      with:
+        path-to-profile: profile.cov
+        flag-name: Go-${{ matrix.go-version }}
+        parallel: true
 
   # notifies that all test jobs are finished.
   finish:
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: shogo82148/actions-goveralls@v1
