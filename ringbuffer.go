@@ -51,7 +51,7 @@ func New[T BufferType](capacity int) (*RingBuffer[T], error) {
 	}, nil
 }
 
-// NewSize recreates a new ring buffer with a different capacity / size, but with the same
+// NewSize recreates a new ring buffer with a different capacity or size, but with the same
 // data as the old ring buffer. The NEW capacity cannot be smaller than the number of
 // values or elements contained in the OLD buffer.
 func (rb *RingBuffer[T]) NewSize(capacity int) (*RingBuffer[T], error) {
@@ -164,7 +164,7 @@ func (rb *RingBuffer[T]) Reset() {
 	rb.writeIndex = 0   // reset the logical pointer to the beginning of the buffer
 }
 
-// Length returns the number of elements / values within the buffer.
+// Length returns the number of elements or values within the buffer.
 //
 // For getting the total capacity of the buffer, use Capacity() or Size()
 func (rb *RingBuffer[T]) Length() int {
@@ -194,12 +194,16 @@ func (rb *RingBuffer[T]) Size() int {
 	return rb.Capacity()
 }
 
+// IsFull returns a boolean indicating if the number of elements or values of the buffer
+// equals the buffer capacity or size.
 func (rb *RingBuffer[T]) IsFull() bool {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 	return rb.elementCount == rb.capacity
 }
 
+// IsEmpty returns a boolean indicating if the number of elements or values within the
+// buffer is zero. Additionally, the write index must be zero.
 func (rb *RingBuffer[T]) IsEmpty() bool {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
