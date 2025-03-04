@@ -166,21 +166,32 @@ func (rb *RingBuffer[T]) Reset() {
 
 // Length returns the number of elements / values within the buffer.
 //
-// For getting the total capacity of the buffer, use Size()
+// For getting the total capacity of the buffer, use Capacity() or Size()
 func (rb *RingBuffer[T]) Length() int {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 	return rb.elementCount
 }
 
-// Size returns the zero-indexed capacity of the ring buffer itself, as opposed to the
+// Capacity returns the zero-indexed capacity of the ring buffer itself, as opposed to the
 // number of elements within the buffer.
 //
 // For getting the number of elements in a buffer, use Length()
-func (rb *RingBuffer[T]) Size() int {
+func (rb *RingBuffer[T]) Capacity() int {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 	return rb.capacity
+}
+
+// Size returns the zero-indexed capacity of the ring buffer itself, as opposed to the
+// number of elements within the buffer.
+//
+// Size works exactly the same as Capacity() because it calls Capacity() directly in order to
+// retain backwards compatability.
+//
+// For getting the number of elements in a buffer, use Length()
+func (rb *RingBuffer[T]) Size() int {
+	return rb.Capacity()
 }
 
 func (rb *RingBuffer[T]) IsFull() bool {
