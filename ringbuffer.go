@@ -29,11 +29,11 @@ type RingBuffer[T BufferType] struct {
 
 // Error handling statements
 var (
-	errBufferSizeIsZero = errors.New("failed to create a new ring buffer! " +
-		"Capacity / size cannot be zero")
-	errBufferSizeTooSmall = errors.New("failed to write to buffer! Ring buffer total " +
+	errCapacityNegativeOrZero = errors.New("failed to create a new ring buffer! " +
+		"Buffer capacity must be greater than zero")
+	errCapacityTooSmall = errors.New("failed to write to buffer! Ring buffer total " +
 		"capacity is too small for all values to be written")
-	errBufferResizeTooSmall = errors.New("failed to resize buffer! The number of " +
+	errCapacityResizeTooSmall = errors.New("failed to resize buffer! The number of " +
 		"elements/values in the existing buffer exceeds the capacity for the new buffer")
 	errDataLengthIsZero = errors.New("failed to write to buffer! The amount of " +
 		"data to write is zero")
@@ -43,7 +43,7 @@ var (
 // zero-indexed capacity and specified type constrained by the BufferType interface
 func New[T BufferType](capacity int) (*RingBuffer[T], error) {
 	if capacity <= 0 {
-		return nil, errBufferSizeIsZero
+		return nil, errCapacityNegativeOrZero
 	}
 	return &RingBuffer[T]{
 		buffer:   make([]T, capacity),
@@ -59,11 +59,11 @@ func (rb *RingBuffer[T]) NewSize(capacity int) (*RingBuffer[T], error) {
 	defer rb.mut.Unlock()
 
 	if capacity <= 0 {
-		return nil, errBufferSizeIsZero
+		return nil, errCapacityNegativeOrZero
 	}
 
 	if rb.elementCount > capacity {
-		return nil, errBufferResizeTooSmall
+		return nil, errCapacityResizeTooSmall
 	}
 
 	newBuffer := make([]T, capacity)
@@ -138,11 +138,11 @@ func (rb *RingBuffer[T]) Write(value T) {
 // length of values is zero. If either of those conditions are true, then their respective
 // error is returned.
 //
-// Otherwise, WriteMany iterates over each slice of elements / values passed into it and
+// Otherwise, WriteMany iterates over each slice of elements or values passed into it and
 // calls Write for each element / value.
 func (rb *RingBuffer[T]) WriteMany(values []T) error {
 	if len(values) > rb.capacity {
-		return errBufferSizeTooSmall
+		return errCapacityTooSmall
 	} else if len(values) == 0 {
 		return errDataLengthIsZero
 	}

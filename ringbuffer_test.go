@@ -8,25 +8,32 @@ import (
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		name         string
 		expectedType string
 		capacity     int
 	}{
-		{"new buffer, zero capacity", "zero size", 0},
-		{"new buffer, string", "string", 5},
-		{"new buffer, int", "int", 5},
-		{"new buffer, byte", "byte", 5},
-		{"new buffer, float", "float", 5},
-		{"new buffer, bool", "bool", 5},
+		{"negative capacity", -1},
+		{"zero capacity", 0},
+		{"string", 5},
+		{"int", 5},
+		{"byte", 5},
+		{"float", 5},
+		{"bool", 5},
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(test.expectedType, func(t *testing.T) {
 			switch test.expectedType {
+			case "negative capacity":
+				rb, err := New[string](test.capacity)
+				if rb == nil || errors.Is(err, errCapacityNegativeOrZero) {
+					t.Log("expected error when creating a zero length buffer, all is ok!")
+				} else {
+					t.Errorf("zero size buffer should be producing an error but incorrectly returns: %s", err)
+					t.Fail()
+				}
 			case "zero size":
-				_, err := New[string](test.capacity)
-				if errors.Is(err, errBufferSizeIsZero) {
+				rb, err := New[string](test.capacity)
+				if rb == nil || errors.Is(err, errCapacityNegativeOrZero) {
 					t.Log("expected error when creating a zero length buffer, all is ok!")
 				} else {
 					t.Errorf("zero size buffer should be producing an error but incorrectly returns: %s", err)
@@ -108,7 +115,7 @@ func TestNewSize(t *testing.T) {
 				}
 
 				rb, err = rb.NewSize(test.capacity)
-				if errors.Is(err, errBufferSizeIsZero) {
+				if rb == nil || errors.Is(err, errCapacityNegativeOrZero) {
 					t.Log("zero size buffer error expected, all is ok!")
 				} else {
 					t.Errorf("zero length buffer should be producing an error but incorrectly returns: %s", err)
@@ -123,7 +130,7 @@ func TestNewSize(t *testing.T) {
 				}
 
 				rb, err := rb.NewSize(2)
-				if errors.Is(err, errBufferResizeTooSmall) {
+				if rb == nil || errors.Is(err, errCapacityResizeTooSmall) {
 					t.Log("buffer size too small error expected, all is ok!")
 				} else {
 					t.Errorf("buffer size smaller than the number of values should produce an error but incorrectly returns: %s", err)
@@ -302,7 +309,7 @@ func TestString(t *testing.T) {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
 				}
-				t.Log(rb.String())
+				t.Logf("buffer[%s]: %s", test.bufferType, rb.String())
 			case "int":
 				rb, _ := New[int](test.capacity)
 				err := rb.WriteMany([]int{1, 2})
@@ -310,7 +317,7 @@ func TestString(t *testing.T) {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
 				}
-				t.Log(rb.String())
+				t.Logf("buffer[%s]: %s", test.bufferType, rb.String())
 			case "uint":
 				rb, _ := New[uint](test.capacity)
 				err := rb.WriteMany([]uint{1, 2})
@@ -318,7 +325,7 @@ func TestString(t *testing.T) {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
 				}
-				t.Log(rb.String())
+				t.Logf("buffer[%s]: %s", test.bufferType, rb.String())
 			case "byte":
 				rb, _ := New[byte](test.capacity)
 				err := rb.WriteMany([]byte{1, 2})
@@ -326,7 +333,7 @@ func TestString(t *testing.T) {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
 				}
-				t.Log(rb.String())
+				t.Logf("buffer[%s]: %s", test.bufferType, rb.String())
 			case "float":
 				rb, _ := New[float32](test.capacity)
 				err := rb.WriteMany([]float32{0.5, 1.5})
@@ -334,7 +341,7 @@ func TestString(t *testing.T) {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
 				}
-				t.Log(rb.String())
+				t.Logf("buffer[%s]: %s", test.bufferType, rb.String())
 			case "bool":
 				rb, _ := New[bool](test.capacity)
 				err := rb.WriteMany([]bool{true, true})
@@ -342,7 +349,7 @@ func TestString(t *testing.T) {
 					t.Errorf("failed to write to buffer: %s", err)
 					t.Fail()
 				}
-				t.Log(rb.String())
+				t.Logf("buffer[%s]: %s", test.bufferType, rb.String())
 			}
 		})
 	}
@@ -409,12 +416,12 @@ func TestSize(t *testing.T) {
 	t.Run("Size()", func(t *testing.T) {
 		rb, _ := New[string](3)
 		if rb.Size() != 3 {
-			t.Errorf("incorrect size, expected %d but got %d", 3, rb.Size())
+			t.Errorf("incorrect capacity, expected %d but got %d", 3, rb.Size())
 			t.Fail()
 		}
 		rb, _ = rb.NewSize(5)
 		if rb.Size() != 5 {
-			t.Errorf("incorrect size, expected %d but got %d", 5, rb.Size())
+			t.Errorf("incorrect capacity, expected %d but got %d", 5, rb.Size())
 			t.Fail()
 		}
 	})
