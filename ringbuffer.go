@@ -83,10 +83,10 @@ func (rb *RingBuffer[T]) String() string {
 	rb.mut.Lock()
 	defer rb.mut.Unlock()
 
-	bufferStr := "capacity= " + strconv.Itoa(rb.capacity) +
-		", writeIndex= " + strconv.Itoa(rb.writeIndex) +
-		", elementCount= " + strconv.Itoa(rb.elementCount) +
-		", buffer= ["
+	bufferStr := "capacity=" + strconv.Itoa(rb.capacity) +
+		", writeIndex=" + strconv.Itoa(rb.writeIndex) +
+		", elementCount=" + strconv.Itoa(rb.elementCount) +
+		", buffer=["
 	lastElement := len(rb.buffer) - 1
 
 	for i := range rb.buffer {
