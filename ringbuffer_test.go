@@ -105,7 +105,6 @@ func TestNewSize(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			switch test.name {
 			case "zero capacity":
 				rb, err := New[int](2)
@@ -300,7 +299,6 @@ func TestString(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			switch test.bufferType {
 			case "string":
 				rb, _ := New[string](test.capacity)
